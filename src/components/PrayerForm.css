@@ -20,11 +20,13 @@
   }
   
   .input-field {
-    width: 100%;
+    width: 100%; /* Adjust as needed for the previous size, change to a specific width if necessary */
+    /* max-width: 600px; You can replace 600px with the exact width it had before */
     padding: 12px;
-    margin-top: 8px;
+    margin-top: 1px; /* Changed top margin to 1px */
     border: 1px solid #ccc;
     border-radius: 8px;
+    box-sizing: border-box; /* Ensures padding doesn't affect the full width */
   }
   
   .btn {
@@ -191,12 +193,13 @@
   .answered-at {
     display: flex;
     align-items: center;
-    margin-right: 10px;
-    margin-bottom: 20px;
+    font-size: 0.85rem; /* Small font size */
+    margin-left: 5px;
+    color: gray;
   }
   
   .calendar-icon {
-    margin-right: 8px;
+    margin-right: 4px;
     color: gray;
   }
 
@@ -228,9 +231,25 @@ textarea.input-field {
     margin-bottom: 20px;
   }
   
-  .answered-label.mt-2 {
+  .answered-info {
+    display: flex;
+    justify-content:left;
+    align-items: center;
+    margin-bottom: 1px; /* Add spacing between the label/date and textarea */
+  }
+
+  .answered-label {
+    font-size: 0.85rem; /* Small font size */
+    font-weight: bold;
+  }
+
+  /* .answered-label.mt-2 {
     margin-top: 8px; 
     margin-bottom: 20px;
+  } */
+
+  .answered-top{
+    width:100%;
   }
 
   .btn-logout {
