@@ -5,6 +5,7 @@ import PrayerForm from './components/PrayerForm';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebaseConfig'; // Make sure auth is properly imported
 import './index.css';
+import './styles/App.css'
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -20,7 +21,7 @@ const App: React.FC = () => {
 
   return (
     <div>
-      <h1>Prayer Request Platform</h1>
+      {/* <h1>Prayer Request Platform</h1> */}
       {!user ? (
         <div>
           <p>Please login to submit a prayer request.</p>
@@ -28,7 +29,7 @@ const App: React.FC = () => {
         </div>
       ) : (
         <div>
-          <p>Welcome, {user.displayName}!</p>
+          {/* <p>Welcome, {user.displayName}!</p> */}
           <PrayerForm />
         </div>
       )}

@@ -3,7 +3,7 @@ import { addDoc, collection, getDocs, query, where, updateDoc, doc, setDoc, getD
 import { db, auth } from '../firebaseConfig';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import './PrayerForm.css'; // Import the CSS file
-import { FaCalendarAlt } from 'react-icons/fa'; // Import calendar icon
+import { FaCalendarAlt, FaTrash } from 'react-icons/fa'; // Import calendar and trash icons
 
 const indonesiaRegions = [
   "Jakarta", "Bandung", "Surabaya", "Medan", "Bali", "Makassar",
@@ -92,79 +92,131 @@ const PrayerForm: React.FC = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
+  
     if (!user) {
       setError('You must be logged in to submit a prayer request.');
       setLoading(false);
       return;
     }
-
+  
+    // Log user information
+    console.log("User UID:", user.uid);
+  
     try {
       const newPrayer = {
         request: prayerRequest,
         prayerType,
-        requesterId: user.uid,
+        requesterId: user.uid, // Ensure this is set correctly
         timestamp: new Date(),
         prayedForCount: 0,
       };
-      
+  
+      console.log("Submitting prayer request:", newPrayer); // Log prayer data before submission
+  
+      // Attempt to add the prayer to Firestore
       const docRef = await addDoc(collection(db, 'prayers'), newPrayer);
-
+  
+      console.log("Prayer request successfully added:", docRef.id); // Log the document ID for debugging
+  
+      // Add the new prayer to the local state immediately
+      setPrayerJournal((prevJournal) => [
+        { id: docRef.id, ...newPrayer }, // Use the Firestore-generated ID
+        ...prevJournal,
+      ]);
+  
       setPrayerRequest('');
       setPrayerType('');
-      setShowModal(false); // Close the modal after submission
-
-      // Add new prayer to the top of the journal
-      setPrayerJournal(prevJournal => [{ id: docRef.id, ...newPrayer }, ...prevJournal]);
-
+      setShowModal(false);
     } catch (err) {
-      console.error('Error submitting prayer request:', err);
+      console.error('Error submitting prayer request:', err); // Log any errors encountered
       setError('Failed to submit the prayer request. Please try again.');
     } finally {
       setLoading(false);
     }
   };
+  
+  
 
   // Mark a prayer as answered and allow editing of the date
   const handleMarkAsAnswered = async (id: string) => {
-    const currentDate = new Date(); // Get current date immediately in correct format
-    const formattedDate = currentDate.toISOString().slice(0, 16); // Format for datetime-local input
-
-    setEditDate(formattedDate); // Allow editing of the date
-
-    // Update the prayer in Firestore
-    const prayerDoc = doc(db, 'prayers', id);
-    await updateDoc(prayerDoc, {
-      answeredAt: currentDate,
-    });
-
-    // Update the prayer in the local state immediately
-    const updatedPrayers = prayerJournal.map((prayer) =>
-      prayer.id === id ? { ...prayer, answeredAt: currentDate } : prayer
-    );
-    setPrayerJournal(updatedPrayers);
+    try {
+      const currentDate = new Date(); // Get the current date
+      console.log('Marking as answered with date:', currentDate);
+  
+      // Format the date to ensure it's properly handled in the UI and Firestore
+      const formattedDate = {
+        seconds: Math.floor(currentDate.getTime() / 1000), // Convert to Firestore Timestamp format
+        nanoseconds: 0
+      };
+  
+      // Update Firestore with the new answeredAt date
+      const prayerDoc = doc(db, 'prayers', id);
+      await updateDoc(prayerDoc, {
+        answeredAt: formattedDate,
+      });
+  
+      // Update the local state immediately
+      const updatedPrayers = prayerJournal.map((prayer) =>
+        prayer.id === id
+          ? { ...prayer, answeredAt: formattedDate }
+          : prayer
+      );
+      setPrayerJournal(updatedPrayers);
+    } catch (err) {
+      console.error('Error marking prayer as answered:', err);
+    }
   };
-
+  
   // Handle the answered prayer date update (manually change the date)
   const handleAnsweredPrayerUpdate = async (id: string, answer: string, answeredDate: string) => {
-    const prayerDoc = doc(db, 'prayers', id);
-    const updatedDate = new Date(answeredDate); // Convert the selected datetime to a Date object
-
-    await updateDoc(prayerDoc, {
-      godAnswer: answer,
-      answeredAt: updatedDate,
-    });
-
-    const updatedPrayers = prayerJournal.map((prayer) =>
-      prayer.id === id ? { ...prayer, godAnswer: answer, answeredAt: updatedDate } : prayer
-    );
-    setPrayerJournal(updatedPrayers);
+    try {
+      // Fetch the current prayer from the state to retain its current answeredAt date
+      const currentPrayer = prayerJournal.find((prayer) => prayer.id === id);
+      
+      if (!currentPrayer) {
+        console.error("Could not find prayer with ID:", id);
+        return;
+      }
+  
+      const updatedDate = currentPrayer.answeredAt ? 
+        new Date(currentPrayer.answeredAt.seconds * 1000) : 
+        new Date(); // If no answeredAt, use current date
+  
+      // Update Firestore with the new God's answer and retain the answeredAt date
+      const prayerDoc = doc(db, 'prayers', id);
+      await updateDoc(prayerDoc, {
+        godAnswer: answer,
+        answeredAt: {
+          seconds: Math.floor(updatedDate.getTime() / 1000), // Preserve the current answeredAt timestamp
+          nanoseconds: 0
+        }
+      });
+  
+      // Update the local state with the new answer and retain the correct answeredAt
+      const updatedPrayers = prayerJournal.map((prayer) =>
+        prayer.id === id ? { ...prayer, godAnswer: answer, answeredAt: currentPrayer.answeredAt } : prayer
+      );
+  
+      setPrayerJournal(updatedPrayers);
+    } catch (err) {
+      console.error('Error updating answered prayer:', err);
+    }
   };
+  
 
   // Delete a prayer request
   const handleDeletePrayer = async (id: string) => {
-    await deleteDoc(doc(db, 'prayers', id));
-    setPrayerJournal(prayerJournal.filter(prayer => prayer.id !== id));
+    try {
+      console.log(`Attempting to delete prayer with id: ${id}`); // Log the ID being deleted
+      // Delete the document from Firestore
+      await deleteDoc(doc(db, 'prayers', id));
+      
+      // Remove the prayer from the local state
+      setPrayerJournal((prevJournal) => prevJournal.filter((prayer) => prayer.id !== id));
+      console.log('Prayer deleted successfully.');
+    } catch (err) {
+      console.error('Error deleting prayer request:', err); // Log any errors encountered
+    }
   };
 
   return (
@@ -204,7 +256,7 @@ const PrayerForm: React.FC = () => {
           </div>
 
           {/* Logout button (small and directly under the picture) */}
-          <button onClick={handleLogout} className="btn btn-danger btn-small mb-4">
+          <button onClick={handleLogout} className="btn-logout">
             Log Out
           </button>
 
@@ -227,19 +279,23 @@ const PrayerForm: React.FC = () => {
             </button>
           </div>
 
-          {prayerJournal.map((prayer) => (
-            <div key={prayer.id} className="prayer-card">
+          {prayerJournal.map((prayer, index) => (
+            <div key={prayer.id || index} className="prayer-card">
               {/* Delete Button */}
               <button onClick={() => handleDeletePrayer(prayer.id)} className="delete-button">
-                X
+              <FaTrash />
               </button>
               <p><strong>Request:</strong> {prayer.request}</p>
               <p className="prayer-type" style={{ backgroundColor: prayerTypeColors[prayer.prayerType] }}>
                 {prayer.prayerType}
               </p>
               <p className="prayer-date-created">
-                {new Date(prayer.timestamp.seconds * 1000).toLocaleString()}
+              {prayer.timestamp instanceof Date
+                ? prayer.timestamp.toLocaleString() // If it's a JavaScript Date object
+                : prayer.timestamp && new Date(prayer.timestamp.seconds * 1000).toLocaleString() // If it's a Firestore Timestamp
+              }
               </p>
+
               <p><strong>Prayed by:</strong> {prayer.prayedForCount} people</p>
               {prayer.answeredAt ? (
                 <div className="answered-section mt-4">

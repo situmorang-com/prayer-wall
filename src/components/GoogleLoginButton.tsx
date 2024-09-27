@@ -14,7 +14,7 @@ const GoogleLoginButton: React.FC = () => {
     }
   };
 
-  return <button onClick={handleLogin}>Login with Google</button>;
+  return <button onClick={handleLogin} className="google-login-button">Login with Google</button>;
 };
 
 export default GoogleLoginButton;

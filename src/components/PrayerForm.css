@@ -10,7 +10,7 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    margin-bottom: 24px;
+    margin-bottom: 1px;
   }
   
   .user-avatar {
@@ -150,10 +150,16 @@
     right: 8px;
     background: none;
     border: none;
-    color: red;
+    color: #f28b82; /* Pastel red color for trash icon */
     font-size: 1.2rem;
     cursor: pointer;
+    transition: color 0.3s ease;
   }
+  
+  .delete-button:hover {
+    color: #e57373; /* Slightly darker red on hover */
+  }
+  
   
   .prayer-type {
     position: absolute;
@@ -225,4 +231,19 @@ textarea.input-field {
   .answered-label.mt-2 {
     margin-top: 8px; 
     margin-bottom: 20px;
+  }
+
+  .btn-logout {
+    padding: 1px 7px; /* Remove padding */
+    font-size: 0.7rem; /* Make the text smaller */
+    background-color: #dc3545; /* Keep the danger/red color */
+    color: white;
+    border: none;
+    border-radius: 25px; /* Smaller border radius */
+    cursor: pointer;
+    margin-top: 8px; /* Add some margin for spacing */
+  }
+  
+  .btn-logout:hover {
+    background-color: #c82333; /* Darken the color on hover */
   }
