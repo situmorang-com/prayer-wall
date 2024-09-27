@@ -1,26 +1,39 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+// App.tsx
+import React, { useState } from 'react';
+import GoogleLoginButton from './components/GoogleLoginButton';
+import PrayerForm from './components/PrayerForm';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './firebaseConfig'; // Make sure auth is properly imported
+import './index.css';
 
-function App() {
+const App: React.FC = () => {
+  const [user, setUser] = useState<any>(null);
+
+  // Listen for authentication state changes
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      setUser(user);
+    } else {
+      setUser(null);
+    }
+  });
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <h1>Prayer Request Platform</h1>
+      {!user ? (
+        <div>
+          <p>Please login to submit a prayer request.</p>
+          <GoogleLoginButton />
+        </div>
+      ) : (
+        <div>
+          <p>Welcome, {user.displayName}!</p>
+          <PrayerForm />
+        </div>
+      )}
     </div>
   );
-}
+};
 
 export default App;
