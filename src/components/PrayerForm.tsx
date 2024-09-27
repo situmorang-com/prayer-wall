@@ -3,10 +3,18 @@ import { addDoc, collection, getDocs, query, where, updateDoc, doc, setDoc, getD
 import { db, auth } from '../firebaseConfig';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import './PrayerForm.css'; // Import the CSS file
+import { FaCalendarAlt } from 'react-icons/fa'; // Import calendar icon
 
 const indonesiaRegions = [
   "Jakarta", "Bandung", "Surabaya", "Medan", "Bali", "Makassar",
 ];
+
+const prayerTypeColors: { [key: string]: string } = {
+  healing: '#FFD700', // Gold
+  guidance: '#1E90FF', // DodgerBlue
+  thanksgiving: '#32CD32', // LimeGreen
+  other: '#FF6347', // Tomato
+};
 
 const PrayerForm: React.FC = () => {
   const [prayerRequest, setPrayerRequest] = useState('');
@@ -92,23 +100,22 @@ const PrayerForm: React.FC = () => {
     }
 
     try {
-      await addDoc(collection(db, 'prayers'), {
+      const newPrayer = {
         request: prayerRequest,
         prayerType,
         requesterId: user.uid,
         timestamp: new Date(),
         prayedForCount: 0,
-      });
+      };
+      
+      const docRef = await addDoc(collection(db, 'prayers'), newPrayer);
 
       setPrayerRequest('');
       setPrayerType('');
       setShowModal(false); // Close the modal after submission
 
-      // Reload prayer journal after submission
-      const q = query(collection(db, 'prayers'), where('requesterId', '==', user.uid));
-      const querySnapshot = await getDocs(q);
-      const prayers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as object }));
-      setPrayerJournal(prayers);
+      // Add new prayer to the top of the journal
+      setPrayerJournal(prevJournal => [{ id: docRef.id, ...newPrayer }, ...prevJournal]);
 
     } catch (err) {
       console.error('Error submitting prayer request:', err);
@@ -201,7 +208,6 @@ const PrayerForm: React.FC = () => {
             Log Out
           </button>
 
-          {/* Button to Open Prayer Request Modal */}
         </div>
       )}
 
@@ -228,19 +234,19 @@ const PrayerForm: React.FC = () => {
                 X
               </button>
               <p><strong>Request:</strong> {prayer.request}</p>
-              <p><strong>Date:</strong> {new Date(prayer.timestamp.seconds * 1000).toLocaleString()}</p>
+              <p className="prayer-type" style={{ backgroundColor: prayerTypeColors[prayer.prayerType] }}>
+                {prayer.prayerType}
+              </p>
+              <p className="prayer-date-created">
+                {new Date(prayer.timestamp.seconds * 1000).toLocaleString()}
+              </p>
               <p><strong>Prayed by:</strong> {prayer.prayedForCount} people</p>
               {prayer.answeredAt ? (
                 <div className="answered-section mt-4">
-                  <label className="answered-label">Date Answered</label>
-                  <input
-                    type="datetime-local"
-                    className="input-field"
-                    value={
-                      editDate ?? (prayer.answeredAt ? new Date(prayer.answeredAt.seconds * 1000).toISOString().slice(0, 16) : "")
-                    } // Check for valid answeredAt field
-                    onChange={(e) => setEditDate(e.target.value)} // Handle date changes
-                  />
+                  <div className="answered-at">
+                    <FaCalendarAlt className="calendar-icon" />
+                    <span>{new Date(prayer.answeredAt.seconds * 1000).toLocaleDateString()}</span>
+                  </div>
                   <label className="answered-label mt-2">God's Answer</label>
                   <textarea
                     className="input-field"
