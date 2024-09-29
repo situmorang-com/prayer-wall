@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { addDoc, collection, getDocs, query, where, updateDoc, doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebaseConfig';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { Link } from 'react-router-dom';
 import './PrayerForm.css'; // Import the CSS file
-import { FaCalendarAlt, FaTrash } from 'react-icons/fa'; // Import calendar and trash icons
+import { FaTrash } from 'react-icons/fa'; // Import calendar and trash icons
 
 const indonesiaRegions = [
   "Jakarta", "Bandung", "Surabaya", "Medan", "Bali", "Makassar",
@@ -106,6 +107,7 @@ const PrayerForm: React.FC = () => {
         requesterId: user.uid, // Ensure this is set correctly
         timestamp: new Date(),
         prayedForCount: 0,
+        answeredAt: null
       };
 
       // Add the prayer to Firestore
@@ -185,6 +187,31 @@ const PrayerForm: React.FC = () => {
     }
   };
 
+  // Handle date changes for prayer creation and answered date
+  const handleDateChange = async (id: string, field: string, newDate: string) => {
+    if (!newDate) return; // Prevent empty date
+  
+    const updatedDate = new Date(newDate);
+    if (isNaN(updatedDate.getTime())) {
+      console.error('Invalid date:', newDate);
+      return; // Exit early on invalid date
+    }
+  
+    const formattedDate = {
+      seconds: Math.floor(updatedDate.getTime() / 1000),
+      nanoseconds: 0
+    };
+  
+    const prayerDoc = doc(db, 'prayers', id);
+    await updateDoc(prayerDoc, { [field]: formattedDate });
+  
+    setPrayerJournal(prevJournal =>
+      prevJournal.map(prayer =>
+        prayer.id === id ? { ...prayer, [field]: formattedDate } : prayer
+      )
+    );
+  };
+
   // Delete a prayer request
   const handleDeletePrayer = async (id: string) => {
     try {
@@ -216,7 +243,7 @@ const PrayerForm: React.FC = () => {
               onBlur={saveUserDetails}
               className="input-field"
               placeholder={user?.phoneNumber ? user.phoneNumber : '+62821xxxxxxx'}
-              style={{ color: user?.phoneNumber ? 'black' : 'grey' }}
+              // style={{ color: user?.phoneNumber ? 'black' : 'grey' }}
             />
             <select
               value={homeArea}
@@ -224,7 +251,7 @@ const PrayerForm: React.FC = () => {
               onBlur={saveUserDetails}
               className="input-field"
             >
-              <option value="" disabled>Select your home area/city</option>
+              <option value="" disabled>Select your location</option>
               {indonesiaRegions.map((region) => (
                 <option key={region} value={region}>{region}</option>
               ))}
@@ -234,7 +261,9 @@ const PrayerForm: React.FC = () => {
           <button onClick={handleLogout} className="btn-logout">
             Log Out
           </button>
+
         </div>
+        
       )}
 
       {!user && <p>Please sign in to submit a prayer request.</p>}
@@ -244,9 +273,14 @@ const PrayerForm: React.FC = () => {
         <div className="prayer-journal">
           <div className="journal-header">
             <h2 className="journal-title">Your Prayer Journal</h2>
-            <button onClick={() => setShowModal(true)} className="btn btn-primary">
-              Add New Prayer Request
-            </button>
+            <div className="journal-buttons">
+              <Link to="/prayer-wall" className="btn btn-primary">
+                Go to Prayer Wall
+              </Link>
+              <button onClick={() => setShowModal(true)} className="btn btn-primary">
+                Add New Prayer Request
+              </button>
+            </div>
           </div>
 
           {prayerJournal.map((prayer, index) => (
@@ -254,33 +288,38 @@ const PrayerForm: React.FC = () => {
               <button onClick={() => handleDeletePrayer(prayer.id)} className="delete-button">
                 <FaTrash />
               </button>
-              <p><strong>Request:</strong> {prayer.request}</p>
-              <p className="prayer-type" style={{ backgroundColor: prayerTypeColors[prayer.prayerType] }}>
-                {prayer.prayerType}
-              </p>
-              <p className="prayer-date-created">
-              {prayer.timestamp instanceof Date
-                ? prayer.timestamp.toLocaleString()
-                : prayer.timestamp && new Date(prayer.timestamp.seconds * 1000).toLocaleString()
-              }
-              </p>
-              <p><strong>Prayed by:</strong> {prayer.prayedForCount} people</p>
-              {prayer.answeredAt ? (
+
+              <div className="prayer-content">
+
+                <p><strong>Request:</strong> {prayer.request}</p>
+
+                <p className="prayer-type" style={{ backgroundColor: prayerTypeColors[prayer.prayerType] }}>
+                  {prayer.prayerType}
+                </p>
+
+                {prayer.answeredAt ? (
                 <div className="answered-section mt-4">
                   <div className="answered-top">
                     {/* God's Answer Label and Date on Top */}
                     <div className="answered-info">
                       <label className="answered-label">God's Answer</label>
-                      <div className="answered-at">
-                        <FaCalendarAlt className="calendar-icon" />
-                        <span>{new Date(prayer.answeredAt.seconds * 1000).toLocaleDateString()}</span>
-                      </div>
+                      <input
+                        type="date"
+                        id="answered-date"
+                        className="input-field date"
+                        defaultValue={prayer.answeredAt && prayer.answeredAt.seconds
+                          ? new Date(prayer.answeredAt.seconds * 1000).toISOString().slice(0, 10)
+                          : ''} // Convert Firestore timestamp if available
+                        onChange={(e) => handleDateChange(prayer.id, "answeredAt", e.target.value)}
+                        style={{ fontSize: 'small', width: '130px', border: 'none' }}
+                      />
+
                     </div>
                     <textarea
                       className="input-field"
                       placeholder="God's answer"
                       defaultValue={prayer.godAnswer || ''}
-                      onBlur={(e) => handleAnsweredPrayerUpdate(prayer.id, e.target.value, editDate || new Date(prayer.answeredAt.seconds * 1000).toISOString())}
+                      onBlur={(e) => handleAnsweredPrayerUpdate(prayer.id, e.target.value, editDate || new Date(prayer.answeredAt?.seconds * 1000).toISOString())}
                     />
                   </div>
                 </div>
@@ -292,6 +331,35 @@ const PrayerForm: React.FC = () => {
                   Mark as Answered
                 </button>
               )}
+              </div>
+
+                {/* Candle Animation */}
+                <div className="candle-container">
+                <span className="prayed-count">{prayer.prayedForCount}</span>
+                  <div className={`candle ${prayer.prayedForCount > 0 ? 'flame-active' : 'smoke-active'}`}>
+                    <div className="thread"></div>
+                    <div className={`flame ${prayer.prayedForCount > 0 ? 'active' : ''}`}></div>
+                    <div className={`glow ${prayer.prayedForCount > 0 ? 'active' : ''}`}></div>
+                    {prayer.prayedForCount > 0 && <div className="blinking-glow"></div>} {/* Conditionally render blinking-glow */}
+                  </div>
+                </div>
+
+              
+              
+              <p className="prayer-date-created">
+                <input
+                  type="date"
+                  id="prayer-date"
+                  className="input-field date"
+                  defaultValue={prayer.timestamp && prayer.timestamp.seconds
+                    ? new Date(prayer.timestamp.seconds * 1000).toISOString().slice(0, 10)
+                    : ''} // Convert Firestore timestamp if available
+                  onChange={(e) => handleDateChange(prayer.id, "timestamp", e.target.value)}
+                  style={{ fontSize: 'small', width: '130px', border: 'none' }}
+                />
+              </p>
+
+
 
             </div>
           ))}

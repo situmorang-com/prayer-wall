@@ -1,0 +1,73 @@
+/* General layout and container */
+.prayer-wall-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .prayer-wall-title {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 30px;
+    color: #333;
+  }
+  
+  /* Grid for organizing prayer cards */
+  .prayer-wall-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  
+  /* Prayer card styling */
+  .prayer-card {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease;
+  }
+  
+  .prayer-card:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Prayer request text */
+  .prayer-request-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #007bff;
+  }
+  
+  /* Requester information */
+  .prayer-requester {
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 10px;
+  }
+  
+  /* Prayed-for count */
+  .prayer-prayed-for {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 15px;
+  }
+  
+  /* Button styling for praying */
+  .btn-prayed-for {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .btn-prayed-for:hover {
+    background-color: #218838;
+  }
+  

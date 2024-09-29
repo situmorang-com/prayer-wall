@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import './PrayerWall.css'; // Import the CSS file
 
 const PrayerWall: React.FC = () => {
   const [prayerRequests, setPrayerRequests] = useState<any[]>([]);
@@ -25,18 +26,22 @@ const PrayerWall: React.FC = () => {
   };
 
   return (
-    <div>
-      <h2>Prayer Wall</h2>
-      {prayerRequests.map((prayer) => (
-        <div key={prayer.id}>
-          <p>{prayer.request}</p>
-          <p>Requested by: {prayer.requesterName}</p>
-          <p>Prayed by: {prayer.prayedForCount} people</p>
-          <button onClick={() => handlePrayedFor(prayer.id, prayer.prayedForCount)}>
-            I've Prayed for This
-          </button>
-        </div>
-      ))}
+    <div className="prayer-wall-container">
+      <h2 className="prayer-wall-title">Prayer Wall</h2>
+      <div className="prayer-wall-grid">
+        {prayerRequests.map((prayer) => (
+          <div key={prayer.id} className="prayer-card">
+            <h3 className="prayer-request-text">{prayer.request}</h3>
+            <p className="prayer-requester">Requested by: {prayer.requesterName || 'Anonymous'}</p>
+            <p className="prayer-prayed-for">
+              Prayed by: {prayer.prayedForCount} {prayer.prayedForCount === 1 ? 'person' : 'people'}
+            </p>
+            <button className="btn-prayed-for" onClick={() => handlePrayedFor(prayer.id, prayer.prayedForCount)}>
+              I've Prayed for This
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

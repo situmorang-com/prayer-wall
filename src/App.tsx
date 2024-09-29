@@ -1,11 +1,12 @@
-// App.tsx
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
 import GoogleLoginButton from './components/GoogleLoginButton';
 import PrayerForm from './components/PrayerForm';
+import PrayerWall from './components/PrayerWall'; // Import the PrayerWall component
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './firebaseConfig'; // Make sure auth is properly imported
+import { auth } from './firebaseConfig';
 import './index.css';
-import './styles/App.css'
+import './styles/App.css';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -20,20 +21,26 @@ const App: React.FC = () => {
   });
 
   return (
-    <div>
-      {/* <h1>Prayer Request Platform</h1> */}
-      {!user ? (
-        <div>
-          <p>Please login to submit a prayer request.</p>
-          <GoogleLoginButton />
-        </div>
-      ) : (
-        <div>
-          {/* <p>Welcome, {user.displayName}!</p> */}
-          <PrayerForm />
-        </div>
-      )}
-    </div>
+    <Router>
+      <div>
+        {!user ? (
+          <div>
+            <p>Please login to submit a prayer request.</p>
+            <GoogleLoginButton />
+          </div>
+        ) : (
+          <div>
+            <nav>
+              <Link to="/">Prayer Form</Link> | <Link to="/prayer-wall">Prayer Wall</Link>
+            </nav>
+            <Routes>
+              <Route path="/" element={<PrayerForm />} />
+              <Route path="/prayer-wall" element={<PrayerWall />} />
+            </Routes>
+          </div>
+        )}
+      </div>
+    </Router>
   );
 };
 
